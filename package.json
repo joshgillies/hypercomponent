@@ -1,0 +1,30 @@
+{
+  "name": "hypercomponent",
+  "version": "1.0.0",
+  "description": "Fast and light component system, backed by hyperHTML",
+  "main": "index.js",
+  "repository": "git@github.com:joshgillies/hypercomponent.git",
+  "author": "Josh Gillies <github@josh.gl>",
+  "license": "MIT",
+  "keywords": [
+    "dom",
+    "hyper",
+    "html",
+    "template",
+    "component",
+    "fast",
+    "performance",
+    "diff",
+    "hyperhtml",
+    "universal"
+  ],
+  "scripts": {
+    "test": "standard"
+  },
+  "dependencies": {
+    "hyperhtml": "^0.8.6"
+  },
+  "devDependencies": {
+    "standard": "^9.0.2"
+  }
+}
