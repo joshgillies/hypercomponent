@@ -42,6 +42,33 @@ app`${[
 ]}`
 ```
 
+### Subscribe to lifecycle events
+
+```js
+const hyperHTML = require('hyperhtml')
+const component = require('hypercomponent')
+const app = hyperHTML.bind(document.body)
+
+const Button = component({
+  onload: (e) => {
+    console.log(e, 'loaded')
+  },
+  onunload: (e) => {
+    console.log(e, 'unloaded')
+  },
+  render: (render, text) => render`
+    <button onclick="${(e) => e.target.parentNode.removeChild(e.target)}">
+      ${text}
+    </button>
+  `
+})
+
+app`${[
+  Button(hyperHTML.wire(), 'Hello world!'),
+  Button(hyperHTML.wire(), 'Hello again!')
+]}`
+```
+
 ## See also:
 
 - [yoshuawuyts/nanocomponent][nano]

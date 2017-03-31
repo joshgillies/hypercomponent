@@ -22,7 +22,8 @@
     "test": "standard"
   },
   "dependencies": {
-    "hyperhtml": "^0.8.6"
+    "hyperhtml": "^0.8.6",
+    "on-load": "^3.2.0"
   },
   "devDependencies": {
     "standard": "^9.0.2"
