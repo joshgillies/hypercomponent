@@ -19,27 +19,11 @@ const Button = component((render, text) => render`
     ${text}
   </button>
 `)
+const myButton = Button()
 
-app`${Button('Hello world!')}`
-```
+app`${myButton.render('Hello world!')}`
 
-### Pass your own [wire][wire] or bound node
-
-```js
-const hyperHTML = require('hyperhtml')
-const component = require('hypercomponent')
-const app = hyperHTML.bind(document.body)
-
-const Button = component((render, text) => render`
-  <button>
-    ${text}
-  </button>
-`)
-
-app`${[
-  Button(hyperHTML.wire(), 'Hello world!'),
-  Button(hyperHTML.wire(), 'Hello again!')
-]}`
+setTimeout(() => myButton.render('Hello there!'), 1000)
 ```
 
 ### Subscribe to lifecycle events
@@ -50,10 +34,10 @@ const component = require('hypercomponent')
 const app = hyperHTML.bind(document.body)
 
 const Button = component({
-  onload: (e) => {
+  load: (e) => {
     console.log(e, 'loaded')
   },
-  onunload: (e) => {
+  unload: (e) => {
     console.log(e, 'unloaded')
   },
   render: (render, text) => render`
@@ -63,16 +47,19 @@ const Button = component({
   `
 })
 
+const button1 = Button()
+const button2 = Button()
+
 app`${[
-  Button(hyperHTML.wire(), 'Hello world!'),
-  Button(hyperHTML.wire(), 'Hello again!')
+  button1.render('Hello world!'),
+  button2.render('Hello again!')
 ]}`
 ```
 
 ## See also:
 
 - [yoshuawuyts/nanocomponent][nano]
-- [joshgillies/microcomponent][micro]
+- [yoshuawuyts/microcomponent][micro]
 
 ## License
 
@@ -85,4 +72,4 @@ MIT
 [hyper]: https://github.com/WebReflection/hyperHTML
 [wire]: https://github.com/WebReflection/hyperHTML#wait--there-is-a-wire--in-the-code
 [nano]: https://github.com/yoshuawuyts/nanocomponent
-[micro]: https://github.com/joshgillies/microcomponent
+[micro]: https://github.com/yoshuawuyts/microcomponent

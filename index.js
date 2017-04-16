@@ -1,52 +1,63 @@
-const hyperHTML = require('hyperhtml')
 const onload = require('on-load')
+const html = require('hyperrender').html
+const svg = require('hyperrender').svg
 const slice = Array.prototype.slice
 
-const WIRE_OR_BOUND_NODE = /(update|hyperHTML)$/
-const ONLOAD_ATTR = /^data-onloadid/
-
 module.exports = function hypercomponent (component) {
-  const render = hyperHTML.wire()
-  const renderer = typeof component === 'function'
-    ? component
-    : component.render
-
+  const symbol = {
+    render: typeof component === 'function' ? component : component.render,
+    load: component && component.load,
+    unload: component && component.unload
+  }
   return function wireComponent () {
-    const onloadHandler = component.onload
-    const onunloadHandler = component.onunload
-    const args = slice.call(arguments)
+    const instance = new Component()
+    instance._symbol = symbol
+    instance._loaded = !(symbol.load || symbol.unload)
+    instance._defaultArgs = slice.call(arguments)
+    return instance
+  }
+}
 
-    let isMounted = false
-    let el = null
+function Component () {
+  const self = this
 
-    if (
-      typeof args[0] === 'function' &&
-      WIRE_OR_BOUND_NODE.test(args[0].name)
-    ) {
-      el = renderer.apply(renderer, args)
-    } else {
-      args.unshift(render) // asign default renderer
-      el = renderer.apply(renderer, args)
-    }
+  function wire () {
+    return wire.html.apply(self, arguments)
+  }
 
-    if (!onloadHandler && !onunloadHandler) return el
+  wire.html = html(this)
+  wire.svg = svg(this)
 
-    if (Array.isArray(el)) {
-      return el // A root elelemnt is required if you want to use mount/unmmount
-    }
+  this._wire = wire
+}
 
-    let len = (el.attributes && el.attributes.length) || 0
-    while (len--) {
-      if (ONLOAD_ATTR.test(el.attributes[len].name)) {
-        isMounted = true
-        break
-      }
-    }
+Component.prototype.render = function render () {
+  const self = this
+  let args = [this._wire] // first arg is always our wire
 
-    if (!isMounted) {
-      return onload(el, onloadHandler, onunloadHandler)
-    }
+  for (var
+    i = 0,
+    length = arguments.length;
+    i < length; i++
+  ) {
+    args[i + 1] = arguments[i] === undefined
+      ? this._defaultArgs[i] // assign default arg if incomming is undefined
+      : arguments[i]
+  }
 
-    return el
+  if (this._loaded === false) {
+    return onload(this._symbol.render.apply(this, args), load, unload)
+  }
+
+  return this._symbol.render.apply(this, args)
+
+  function load () {
+    self._loaded = true
+    self._symbol.load.apply(null, arguments)
+  }
+
+  function unload () {
+    self._loaded = false
+    self._symbol.unload.apply(null, arguments)
   }
 }

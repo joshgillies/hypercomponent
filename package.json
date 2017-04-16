@@ -19,13 +19,16 @@
     "universal"
   ],
   "scripts": {
+    "start": "bankai example --open --uglify=false",
     "test": "standard"
   },
   "dependencies": {
-    "hyperhtml": "^0.8.6",
+    "hyperrender": "^1.0.0",
     "on-load": "^3.2.0"
   },
   "devDependencies": {
+    "bankai": "^7.1.1",
+    "hyperhtml": "^0.9.1",
     "standard": "^9.0.2"
   }
 }
