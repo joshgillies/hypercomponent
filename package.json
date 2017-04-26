@@ -1,6 +1,6 @@
 {
   "name": "hypercomponent",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Fast and light component system, backed by hyperHTML",
   "main": "index.js",
   "repository": "git@github.com:joshgillies/hypercomponent.git",
