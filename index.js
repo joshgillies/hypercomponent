@@ -1,63 +1,68 @@
-const onload = require('on-load')
-const html = require('hyperrender').html
-const svg = require('hyperrender').svg
-const slice = Array.prototype.slice
+var PicoComponent = require('picocomponent')
+var render = require('hyperrender')
 
-module.exports = function hypercomponent (component) {
-  const symbol = {
-    render: typeof component === 'function' ? component : component.render,
-    load: component && component.load,
-    unload: component && component.unload
-  }
-  return function wireComponent () {
-    const instance = new Component()
-    instance._symbol = symbol
-    instance._loaded = !(symbol.load || symbol.unload)
-    instance._defaultArgs = slice.call(arguments)
-    return instance
-  }
-}
-
-function Component () {
-  const self = this
-
-  function wire () {
-    return wire.html.apply(self, arguments)
+function createComponent (definition) {
+  function Component (args) {
+    HyperComponent.apply(this, args)
+    if (typeof definition.constructor === 'function') {
+      definition.constructor.apply(this, args)
+    }
   }
 
-  wire.html = html(this)
-  wire.svg = svg(this)
+  Component.prototype = Object.create(HyperComponent.prototype)
+  Component.prototype.constructor = Component
 
-  this._wire = wire
-}
-
-Component.prototype.render = function render () {
-  const self = this
-  let args = [this._wire] // first arg is always our wire
-
-  for (var
-    i = 0,
-    length = arguments.length;
-    i < length; i++
-  ) {
-    args[i + 1] = arguments[i] === undefined
-      ? this._defaultArgs[i] // assign default arg if incomming is undefined
-      : arguments[i]
+  for (var prop in definition) {
+    switch (prop) {
+      case 'connect':
+        Component.prototype._load = definition.connect
+        break
+      case 'constructor':
+        break
+      case 'disconnect':
+        Component.prototype._unload = definition.disconnect
+        break
+      case 'render':
+        Component.prototype._render = definition.render
+        break
+      case 'update':
+        Component.prototype._update = definition.update
+        break
+      default:
+        Component.prototype[prop] = definition[prop]
+    }
   }
 
-  if (this._loaded === false) {
-    return onload(this._symbol.render.apply(this, args), load, unload)
-  }
-
-  return this._symbol.render.apply(this, args)
-
-  function load () {
-    self._loaded = true
-    self._symbol.load.apply(null, arguments)
-  }
-
-  function unload () {
-    self._loaded = false
-    self._symbol.unload.apply(null, arguments)
+  return function componentFactory () {
+    return new Component(arguments)
   }
 }
+
+function HyperComponent () {
+  PicoComponent.call(this)
+
+  this._html = render.html(this)
+  this._svg = render.svg(this)
+}
+
+HyperComponent.prototype = Object.create(PicoComponent.prototype)
+HyperComponent.prototype.constructor = HyperComponent
+
+HyperComponent.prototype.html = function html () {
+  return this._html.apply(this, arguments)
+}
+
+HyperComponent.prototype.svg = function svg () {
+  return this._svg.apply(this, arguments)
+}
+
+HyperComponent.prototype.handleEvent = function handleEvent (event) {
+  var type = event.type
+  var handler = this[type] || this['on' + type] || this['on' + type.charAt(0).toUpperCase() + type.slice(1)]
+  if (handler) handler.call(this, event)
+}
+
+module.exports = createComponent
+module.exports.default = module.exports
+module.exports.HyperComponent = HyperComponent
+module.exports.render = render
