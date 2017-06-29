@@ -7,59 +7,62 @@
 
 ## Usage
 
-### Basic
+### A Basic Component
 
 ```js
-const hyperHTML = require('hyperhtml')
-const component = require('hypercomponent')
-const app = hyperHTML.bind(document.body)
+const HyperComponent = require('hypercomponent')
 
-const Button = component((render, text) => render`
-  <button>
-    ${text}
-  </button>
-`)
-const myButton = Button()
+class Button extends HyperComponent {
+  render (text) {
+    return this.html`
+      <button onclick="${this}">
+        ${text}
+      </button>
+    `
+  }
+  onclick () {
+    this.render(`I've been clicked!`)
+  }
+}
 
-app`${myButton.render('Hello world!')}`
+const myButton = new Button()
 
-setTimeout(() => myButton.render('Hello there!'), 1000)
+document.body.appendChild(myButton.render('Click me?'))
 ```
 
-### Subscribe to lifecycle events
+### A Stateful Component
 
 ```js
-const hyperHTML = require('hyperhtml')
-const component = require('hypercomponent')
-const app = hyperHTML.bind(document.body)
+const HyperComponent = require('hypercomponent')
 
-const Button = component({
-  load: (e) => {
-    console.log(e, 'loaded')
-  },
-  unload: (e) => {
-    console.log(e, 'unloaded')
-  },
-  render: (render, text) => render`
-    <button onclick="${(e) => e.target.parentNode.removeChild(e.target)}">
-      ${text}
-    </button>
-  `
-})
+class Timer extends HyperComponent {
+  constructor () {
+    super()
+    this.state = {
+      secondsElapsed: 0
+    }
+  }
+  tick () {
+    this.state.secondsElapsed = this.state.secondsElapsed + 1
+    this.render()
+  }
+  connect () {
+    this.interval = setInterval(() => this.tick(), 1000)
+  }
+  disconnect () {
+    clearInterval(this.interval)
+  }
+  render () {
+    return this.html`
+      <div>Seconds Elapsed: ${this.state.secondsElapsed}</div>
+    `
+  }
+}
 
-const button1 = Button()
-const button2 = Button()
+const myTimer = new Timer()
 
-app`${[
-  button1.render('Hello world!'),
-  button2.render('Hello again!')
-]}`
+document.body.appendChild(myTimer.render())
 ```
-
-## See also:
-
-- [yoshuawuyts/nanocomponent][nano]
-- [yoshuawuyts/microcomponent][micro]
 
 ## License
 
@@ -70,6 +73,3 @@ MIT
 [2]: https://img.shields.io/badge/code_style-standard-brightgreen.svg
 [3]: http://standardjs.com/
 [hyper]: https://github.com/WebReflection/hyperHTML
-[wire]: https://github.com/WebReflection/hyperHTML#wait--there-is-a-wire--in-the-code
-[nano]: https://github.com/yoshuawuyts/nanocomponent
-[micro]: https://github.com/yoshuawuyts/microcomponent
