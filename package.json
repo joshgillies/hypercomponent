@@ -3,6 +3,9 @@
   "version": "2.0.1",
   "description": "Fast and light component system, backed by hyperHTML",
   "main": "index.js",
+  "browser": {
+    "viperhtml": "hyperhtml"
+  },
   "repository": "git@github.com:joshgillies/hypercomponent.git",
   "author": "Josh Gillies <github@josh.gl>",
   "license": "MIT",
