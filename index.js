@@ -1,63 +1,38 @@
-const onload = require('on-load')
-const html = require('hyperrender').html
-const svg = require('hyperrender').svg
-const slice = Array.prototype.slice
+var PicoComponent = require('picocomponent')
+var viperHTML = require('viperhtml')
 
-module.exports = function hypercomponent (component) {
-  const symbol = {
-    render: typeof component === 'function' ? component : component.render,
-    load: component && component.load,
-    unload: component && component.unload
-  }
-  return function wireComponent () {
-    const instance = new Component()
-    instance._symbol = symbol
-    instance._loaded = !(symbol.load || symbol.unload)
-    instance._defaultArgs = slice.call(arguments)
-    return instance
-  }
+function HyperComponent () {
+  PicoComponent.call(this)
 }
 
-function Component () {
-  const self = this
+HyperComponent.prototype = Object.create(PicoComponent.prototype)
+HyperComponent.prototype.constructor = HyperComponent
 
-  function wire () {
-    return wire.html.apply(self, arguments)
-  }
-
-  wire.html = html(this)
-  wire.svg = svg(this)
-
-  this._wire = wire
+HyperComponent.prototype.adopt = function adopt (node, type) {
+  this['_' + type || 'html'] = viperHTML.adopt(node)
+  return this
 }
 
-Component.prototype.render = function render () {
-  const self = this
-  let args = [this._wire] // first arg is always our wire
-
-  for (var
-    i = 0,
-    length = arguments.length;
-    i < length; i++
-  ) {
-    args[i + 1] = arguments[i] === undefined
-      ? this._defaultArgs[i] // assign default arg if incomming is undefined
-      : arguments[i]
-  }
-
-  if (this._loaded === false) {
-    return onload(this._symbol.render.apply(this, args), load, unload)
-  }
-
-  return this._symbol.render.apply(this, args)
-
-  function load () {
-    self._loaded = true
-    self._symbol.load.apply(null, arguments)
-  }
-
-  function unload () {
-    self._loaded = false
-    self._symbol.unload.apply(null, arguments)
-  }
+HyperComponent.prototype.handleEvent = function handleEvent (event) {
+  var handler = this[event.type] || this['on' + event.type]
+  if (handler) handler.call(this, event)
 }
+
+HyperComponent.prototype.html = function html () {
+  if (this._html === undefined) this._html = this.wire(this, 'html')
+  this.el = this._html.apply(this, arguments)
+  return this.el
+}
+
+HyperComponent.prototype.svg = function svg () {
+  if (this._svg === undefined) this._svg = this.wire(this, 'svg')
+  this.el = this._svg.apply(this, arguments)
+  return this.el
+}
+
+HyperComponent.prototype.wire = function wire () {
+  return viperHTML.wire.apply(viperHTML, arguments)
+}
+
+module.exports = HyperComponent
+module.exports.default = module.exports
