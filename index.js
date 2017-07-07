@@ -28,11 +28,6 @@ function HyperComponent (props) {
 HyperComponent.prototype = Object.create(PicoComponent.prototype)
 HyperComponent.prototype.constructor = HyperComponent
 
-HyperComponent.prototype.adopt = function adopt (node, type) {
-  this['_' + type || 'html'] = viperHTML.adopt(node)
-  return this
-}
-
 HyperComponent.prototype.child = function child (Component, props, children) {
   if (Components.get(this) === undefined) Components.set(this, {})
 
