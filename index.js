@@ -1,8 +1,27 @@
 var PicoComponent = require('picocomponent')
 var viperHTML = require('viperhtml')
+var extend = require('xtend/mutable')
 
-function HyperComponent () {
+// WeakMap fallback from hyperhtml HT @WebReflection
+var EXPANDO = '__hypercomponent'
+var $WeakMap = typeof WeakMap === undefined
+  ? function () {
+    return {
+      get: function (obj) { return obj[EXPANDO] },
+      set: function (obj, value) {
+        Object.defineProperty(obj, EXPANDO, {
+          configurable: true,
+          value: value
+        })
+      }
+    }
+  } : WeakMap
+
+var Components = new $WeakMap()
+
+function HyperComponent (props) {
   PicoComponent.call(this)
+  this.props = props || this.defaultProps || {}
 }
 
 HyperComponent.prototype = Object.create(PicoComponent.prototype)
@@ -11,6 +30,27 @@ HyperComponent.prototype.constructor = HyperComponent
 HyperComponent.prototype.adopt = function adopt (node, type) {
   this['_' + type || 'html'] = viperHTML.adopt(node)
   return this
+}
+
+HyperComponent.prototype.child = function child (Component, props, children) {
+  if (Components.get(this) === undefined) Components.set(this, {})
+
+  var components = Components.get(this)
+  var key = props && props.key ? Component.name + ':' + props.key : Component.name
+
+  if (components[key] === undefined) {
+    return (components[key] = new Component(
+      extend(
+        Component.defaultProps || {},
+        props || {},
+        children ? { children: children } : {}
+      )
+    )).render()
+  }
+
+  var instance = components[key]
+  instance.props = extend(instance.props, props, { children: children })
+  return instance.render()
 }
 
 HyperComponent.prototype.handleEvent = function handleEvent (event) {

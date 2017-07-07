@@ -27,7 +27,8 @@
   },
   "dependencies": {
     "picocomponent": "^2.0.0",
-    "viperhtml": "^0.9.1"
+    "viperhtml": "^0.12.2",
+    "xtend": "^4.0.1"
   },
   "devDependencies": {
     "standard": "^9.0.2"
