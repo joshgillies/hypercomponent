@@ -1,6 +1,6 @@
 var PicoComponent = require('picocomponent')
 var viperHTML = require('viperhtml')
-var extend = require('xtend/mutable')
+var extend = require('xtend')
 
 // WeakMap fallback from hyperhtml HT @WebReflection
 var EXPANDO = '__hypercomponent'
@@ -22,6 +22,7 @@ var Components = new $WeakMap()
 function HyperComponent (props) {
   PicoComponent.call(this)
   this.props = props || this.defaultProps || {}
+  this.state = this.defaultState || {}
 }
 
 HyperComponent.prototype = Object.create(PicoComponent.prototype)
@@ -62,6 +63,11 @@ HyperComponent.prototype.html = function html () {
   if (this._html === undefined) this._html = this.wire(this, 'html')
   this.el = this._html.apply(this, arguments)
   return this.el
+}
+
+HyperComponent.prototype.setState = function setState (state) {
+  this.state = extend(this.state, state)
+  this.render()
 }
 
 HyperComponent.prototype.svg = function svg () {
