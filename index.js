@@ -76,8 +76,9 @@ HyperComponent.prototype.svg = function svg () {
   return this.el
 }
 
-HyperComponent.prototype.wire = function wire () {
-  return viperHTML.wire.apply(viperHTML, arguments)
+HyperComponent.prototype.wire = function wire (obj, type) {
+  if (typeof obj === 'string') return viperHTML.wire(this, obj)
+  return viperHTML.wire(obj, type)
 }
 
 module.exports = HyperComponent
