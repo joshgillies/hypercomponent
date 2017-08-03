@@ -65,12 +65,6 @@ HyperComponent.prototype.setState = function setState (state) {
   this.render()
 }
 
-HyperComponent.prototype.svg = function svg () {
-  if (this._svg === undefined) this._svg = this.wire(this, 'svg')
-  this.el = this._svg.apply(this, arguments)
-  return this.el
-}
-
 HyperComponent.prototype.wire = function wire (obj, type) {
   if (typeof obj === 'string') return viperHTML.wire(this, obj)
   return viperHTML.wire(obj, type)
