@@ -4,7 +4,7 @@ var extend = require('xtend')
 
 // WeakMap fallback from hyperhtml HT @WebReflection
 var EXPANDO = '__hypercomponent'
-var $WeakMap = typeof WeakMap === undefined
+var $WeakMap = typeof WeakMap === 'undefined'
   ? function () {
     return {
       get: function (obj) { return obj[EXPANDO] },

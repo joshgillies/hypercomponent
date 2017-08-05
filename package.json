@@ -6,6 +6,9 @@
   "browser": {
     "viperhtml": "hyperhtml"
   },
+  "files": [
+    "dist"
+  ],
   "repository": "git@github.com:joshgillies/hypercomponent.git",
   "author": "Josh Gillies <github@josh.gl>",
   "license": "MIT",
@@ -22,7 +25,9 @@
     "universal"
   ],
   "scripts": {
-    "start": "bankai example --open --uglify=false",
+    "build": "rollup -c && npm run minify",
+    "minify": "uglifyjs dist/hypercomponent.js -c -m -o dist/hypercomponent.min.js",
+    "prepublishOnly": "npm test && npm run build",
     "test": "standard"
   },
   "dependencies": {
@@ -31,6 +36,11 @@
     "xtend": "^4.0.1"
   },
   "devDependencies": {
-    "standard": "^9.0.2"
+    "rollup": "^0.45.2",
+    "rollup-plugin-commonjs": "^8.1.0",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-uglify": "^2.0.1",
+    "standard": "^9.0.2",
+    "uglify-js": "^3.0.27"
   }
 }
