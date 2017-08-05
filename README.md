@@ -3,13 +3,35 @@
 [![Build Status][0]][1]
 [![Standard - JavaScript Style Guide][2]][3]
 
-> A framework agnostic front-end component system, backed by [hyperHTML][hyper] :zap:
+> :zap: Fast and light component system, backed by [hyperHTML][hyper]
+
+`HyperComponent` is an abstract component system designed to be fast, and light - weighing in at ~4kb.
+
+```js
+const HyperComponent = require('hypercomponent')
+
+class HelloMessage extends HyperComponent {
+  renderCallback (wire) {
+    return wire`
+      <div>Hello ${this.props.name}</div>
+    `
+  }
+}
+
+const greeting = new HelloMessage({ name: 'Jane'})
+
+document.body.appendChild(greeting.render())
+```
+
+## Install
+
+`npm install hypercomponent --save`
 
 ## API
 
 ### `HyperComponent`
 
-`HyperComponent` is a base class for creating framework agnostic front-end components.
+`HyperComponent` is a base class for creating generic front-end components.
 
 ```js
 class Component extends HyperComponent {
@@ -25,127 +47,114 @@ Instances of `HyperComponent` have the following internal properties:
 - `this.props`: The initial properties passed to the `HyperComponent` constructor. Defaults to `Component.defaultProps` or `{}`
 - `this.state`: The initial state of the `HyperComponent` constructor. Defaults to `Component.defaultState` or `{}`
 
-### `HyperComponent.prototype.child(Component, props, children)`
+### `HyperComponent.prototype.renderCallback(wire, component)`
 
-`HyperComponent` provides a `this.child` method for managing component composition. The following arguments are available, and the returned value of `this.child` is the result of calling `Component.prototype.render()`.
+You'll always want to implement a render function. This forms the public interface for your component. Your `renderCallback` method should always return DOM nodes, and the output of your `renderCallback` is automatically assigned to `this.el`.
 
-#### `Component`
+The following arguments are available:
 
-The first argument to `this.child` is the component class you wish to compose within your parent component. It's expected that your `Component` is an instance of `HyperComponent`.
+#### `wire`
 
-#### `props`
+The `wire` argument is a tagged template literal for turning your template into DOM.
 
-The second argument to `this.child` is your props object. Internally this will effectively create a new instance of your child component by passing props to the constructor eg. `new Component(props)`
+Internally your template is cached against the instance of a component, and as such additional calls to `wire` with different templates will result in errors.
 
-For managing multiple instances of the same component class, you can additionally assign a `key` property via `props.key`, which is used to ensure component instances are reused on subsequent calls to `render()`.
-
-#### `children`
-
-The last argument to `this.child` is `children`, and it's expected that this argument is a valid type for children within hyperHTML eg. a String of text or markup, DOM nodes, a Promise, or an Array of the previous types. Internally the `children` argument is assigned to `this.props.children`.
-
-As an example, the following demonstrates all of the above.
+For cases where you want sub templates, you can simply pass a optional `type` argument, eg.
 
 ```js
-class Parent extends HyperComponent {
-  render () {
-    return this.html`<div id="parent">${
-      this.child(Child, { key: 'child1' }, this.wire(':child')`<div>${[
-        this.child(Child, { key: 'subchild1' }, `<div>woah!</div>`),
-        this.child(Child, { key: 'subchild2' }, `<div>dude!</div>`)
-      ]}</div>`)
-    }</div>`
+class Component extends HyperComponent {
+  constructor (props) {
+    super(props)
+    this.winning = true
   }
-}
-
-class Child extends HyperComponent {
-  render () {
-    return this.html`<div id="${ this.props.key }">${
-      this.props.children
-    }</div>`
+  renderCallback (wire) {
+    return wire`
+      <div>${this.winning
+        ? wire(':winning')`<span>Winning!</span>`
+        : wire(':not-winning')`<span>Not winning!</span>`
+      }</div>
+    `
   }
-}
 ```
 
-### `HyperComponent.prototype.connect()`
-
-When assigned, the `connect` handler will be called once your component has been inserted into the DOM.
-
-### `HyperComponent.prototype.disconnect()`
-
-When assigned, the `disconnect` handler will be called once your component has been removed from the DOM.
-
-### `HyperComponent.prototype.handleEvent(event)`
-
-Preconfigured to delegate any component method that's name matches a valid DOM event. eg. `onclick`/`click`.
-
-```js
-class Clicker extends HyperComponent {
-  onclick (event) {
-    console.log(event.target, " has been clicked!")
-  }
-}
-
-// instead of this... 👎
-class BoundButton extends Clicker {
-  render () {
-    return this.html`<button onclick="${this.onclick}">Click me</button>`
-  }
-}
-
-// you can simply do this! 🎉
-class DelegatedButton extends Clicker {
-  render () {
-    return this.html`<button onclick="${this}">Click me</button>`
-  }
-}
-```
-
-Of course the `handleEvent` method as provided by `HyperComponent` is simply a helper. You can always override it and create your own event delegation logic. For more information on `handleEvent` checkout this post by [@WebReflection][WebReflection]: [DOM handleEvent: a cross-platform standard since year 2000][handleEvent].
-
-### `HyperComponent.prototype.html`
-
-Tagged template literal for declaring your template tag. Generally used from within your `render()` function.
-
-The output of your template literal is automatically assigned to `this.el`.
-
-```js
-class Component extends HyperComponent {}
-const comp = new Component()
-const el = comp.html`<div></div>`
-el === comp.el // true
-```
-
-### `HyperComponent.prototype.render()`
-
-You'll always want to implement a render function. This forms the public interface for your component. Your `render` method should always return DOM nodes.
-
-### `HyperComponent.prototype.setState(obj)`
-
-Sets the internal state of a component eg. `this.state` by extending previous state with next state. After the state is updated your components `render()` method will be called.
-
-### `HyperComponent.prototype.wire(obj, type)`
-
-A simple facade around [`hyperHTML.wire(obj, type)`][wire]. Useful as a shorthand for creating wires within a template.
+For those familiar with `hyperHTML` a `wire` in this case is literally a facade around [`hyperHTML.wire([obj[, type]])`][wire], and can be used in the same way, eg.
 
 ```js
 class Component extends HyperComponent {
   constructor (props) {
     super(props)
     this.items = [
-      { text: 'Foo'},
-      { text: 'Bar'}
+      { text: 'Foo' },
+      { text: 'Bar' }
     ]
   }
-  render () {
-    return this.html`
-      <div>${this.items.map((item) => this.wire(item)`
-        <div> ${item.text} </div>`
-      )}</div>`
+  renderCallback (wire) {
+    return wire`
+      <div>
+        <ul>${this.items.map((item) => wire(item, ':unordered')`
+          <div> ${item.text} </div>`
+        )}</ul>
+        <ol>${this.items.map((item) => wire(item, ':ordered')`
+          <div> ${item.text} </div>`
+        )}</ol>
+      </div>`
   }
-}1
+}
 ```
 
-As an added convenience, for cases where you'd want to bind an additional type to your components instance eg. `this.wire(this, ':div')`. You can simply do `this.wire(':div')`.
+#### `component(Component, props, children)`
+
+The `component` argument is useful for managing component composition, and the returned value of `component` is the result of calling `Component.prototype.renderCallback()`. The following arguments are available.
+
+##### `Component`
+
+The `Component` argument is a component class you wish to compose within your parent component. It's expected that `Component` is an instance of `HyperComponent`.
+
+##### `props`
+
+Internally this will effectively create a new instance of your child component by passing props to the constructor eg. `new Component(props)`
+
+For managing multiple instances of the same component class, you can additionally assign a `key` property via `props.key`, which is used to ensure component instances are reused on subsequent calls to `renderCallback()`.
+
+##### `children`
+
+It's expected that the `children` argument is a [valid type for children][types] within hyperHTML eg. a String of text or markup, DOM nodes, a Promise, or an Array of the previous types. Internally the `children` argument is assigned to `this.props.children`.
+
+As an example, the following demonstrates all of the above.
+
+```js
+class Parent extends HyperComponent {
+  renderCallback (wire, component) {
+    return wire`<div id="parent">${
+      component(Child, { key: 'child1' },
+      wire(':child')`<div>${[
+        component(Child, { key: 'subchild1' }, `<div>woah!</div>`),
+        component(Child, { key: 'subchild2' }, `<div>dude!</div>`)
+      ]}</div>`)
+    }</div>`
+  }
+}
+
+class Child extends HyperComponent {
+  renderCallback (wire) {
+    return wire`<div id="${ this.props.key }">${
+      this.props.children
+    }</div>`
+  }
+}
+```
+
+### `HyperComponent.prototype.connectedCallback()`
+
+When assigned, the `connectedCallback` handler will be called once your component has been inserted into the DOM.
+
+### `HyperComponent.prototype.disconnectedCallback()`
+
+When assigned, the `disconnectedCallback` handler will be called once your component has been removed from the DOM.
+
+### `HyperComponent.prototype.setState(obj)`
+
+Sets the internal state of a component eg. `this.state` by extending previous state with next state. After the state is updated your components `renderCallback()` method will be called.
 
 ## Examples
 
@@ -155,8 +164,8 @@ As an added convenience, for cases where you'd want to bind an additional type t
 const HyperComponent = require('hypercomponent')
 
 class HelloMessage extends HyperComponent {
-  render () {
-    return this.html`
+  renderCallback (wire) {
+    return wire`
       <div>Hello ${this.props.name}</div>
     `
   }
@@ -181,17 +190,17 @@ class Timer extends HyperComponent {
   }
   tick () {
     this.setState({
-      secondsElapsed = this.state.secondsElapsed + 1
+      secondsElapsed: this.state.secondsElapsed + 1
     })
   }
-  connect () {
+  connectedCallback () {
     this.interval = setInterval(() => this.tick(), 1000)
   }
-  disconnect () {
+  disconnectedCallback () {
     clearInterval(this.interval)
   }
-  render () {
-    return this.html`
+  renderCallback (wire) {
+    return wire`
       <div>Seconds Elapsed: ${this.state.secondsElapsed}</div>
     `
   }
@@ -206,27 +215,29 @@ document.body.appendChild(myTimer.render())
 
 ```js
 class TodoApp extends HyperComponent {
-  constructor(props) {
+  constructor (props) {
     super(props)
     this.state = {items: [], text: ''}
+    this.onchange = this.onchange.bind(this)
+    this.onsubmit = this.onsubmit.bind(this)
   }
-  render() {
-    return this.html`
+  renderCallback (wire, component) {
+    return wire`
       <div>
         <h3>TODO</h3>${
-        this.child(TodoList, {items: this.state.items})
-        }<form onsubmit="${this}">
-          <input onchange="${this}" value="${this.state.text}" />
+        component(TodoList, {items: this.state.items})
+        }<form onsubmit="${this.onsubmit}">
+          <input onchange="${this.onchange}" value="${this.state.text}" />
           <button>Add #${this.state.items.length + 1}</button>
         </form>
       </div>
     `
   }
-  onchange(e) {
-    this.setState({text: e.target.value})
+  onchange (event) {
+    this.setState({text: event.target.value})
   }
-  onsubmit(e) {
-    e.preventDefault()
+  onsubmit (event) {
+    event.preventDefault()
     var newItem = {
       text: this.state.text,
       id: Date.now()
@@ -239,9 +250,9 @@ class TodoApp extends HyperComponent {
 }
 
 class TodoList extends HyperComponent {
-  render() {
-    return this.html`
-      <ul>${this.props.items.map(item => this.wire(item)`
+  renderCallback (wire) {
+    return wire`
+      <ul>${this.props.items.map(item => wire(item)`
         <li>
           ${item.text}
         </li>`)
@@ -264,5 +275,5 @@ MIT
 [3]: http://standardjs.com/
 [WebReflection]: https://twitter.com/WebReflection
 [hyper]: https://github.com/WebReflection/hyperHTML
+[types]: https://github.com/WebReflection/hyperHTML/blob/master/DEEPDIVE.md#good
 [wire]: https://github.com/WebReflection/hyperHTML#wait--there-is-a-wire--in-the-code
-[handleEvent]: https://medium.com/@WebReflection/dom-handleevent-a-cross-platform-standard-since-year-2000-5bf17287fd38
