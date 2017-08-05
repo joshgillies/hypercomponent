@@ -19,16 +19,7 @@ var $WeakMap = typeof WeakMap === 'undefined'
 
 var Components = new $WeakMap()
 
-function HyperComponent (props) {
-  PicoComponent.call(this)
-  this.props = props || this.defaultProps || {}
-  this.state = this.defaultState || {}
-}
-
-HyperComponent.prototype = Object.create(PicoComponent.prototype)
-HyperComponent.prototype.constructor = HyperComponent
-
-HyperComponent.prototype.child = function child (Component, props, children) {
+function createChild (Component, props, children) {
   if (Components.get(this) === undefined) Components.set(this, {})
 
   var components = Components.get(this)
@@ -49,25 +40,49 @@ HyperComponent.prototype.child = function child (Component, props, children) {
   return instance.render()
 }
 
-HyperComponent.prototype.handleEvent = function handleEvent (event) {
-  var handler = this[event.type] || this['on' + event.type]
-  if (handler) handler.call(this, event)
+function HyperComponent (props) {
+  if (this.connectedCallback) this.connect = this.connectedCallback
+  if (this.disconnectedCallback) this.disconnect = this.disconnectedCallback
+  PicoComponent.call(this)
+  this.props = props || this.defaultProps || {}
+  this.state = this.defaultState || {}
 }
 
-HyperComponent.prototype.html = function html () {
-  if (this._html === undefined) this._html = this.wire(this, 'html')
-  this.el = this._html.apply(this, arguments)
+HyperComponent.prototype = Object.create(PicoComponent.prototype)
+HyperComponent.prototype.constructor = HyperComponent
+
+HyperComponent.prototype.render = function render () {
+  var self = this
+  if (this._wire === undefined) {
+    this._wire = function wire () {
+      var args = arguments
+      var isStatic = args[0] && args[0].raw
+      if (args.length > 1) {
+        if (isStatic) {
+          return viperHTML.wire(self).apply(viperHTML, args)
+        }
+        return viperHTML.wire.apply(viperHTML, args)
+      }
+      switch (typeof args[0]) {
+        case 'string':
+          return viperHTML.wire(self, args[0])
+        case 'object':
+          if (isStatic) {
+            return viperHTML.wire(self).apply(viperHTML, args)
+          }
+          return viperHTML.wire(args[0])
+        default:
+          return viperHTML.wire(self)
+      }
+    }
+  }
+  this.el = this.renderCallback(this._wire, createChild.bind(this))
   return this.el
 }
 
 HyperComponent.prototype.setState = function setState (state) {
   this.state = extend(this.state, state)
   this.render()
-}
-
-HyperComponent.prototype.wire = function wire (obj, type) {
-  if (typeof obj === 'string') return viperHTML.wire(this, obj)
-  return viperHTML.wire(obj, type)
 }
 
 module.exports = HyperComponent
