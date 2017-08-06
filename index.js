@@ -1,63 +1,89 @@
-const onload = require('on-load')
-const html = require('hyperrender').html
-const svg = require('hyperrender').svg
-const slice = Array.prototype.slice
+var PicoComponent = require('picocomponent')
+var viperHTML = require('viperhtml')
+var extend = require('xtend')
 
-module.exports = function hypercomponent (component) {
-  const symbol = {
-    render: typeof component === 'function' ? component : component.render,
-    load: component && component.load,
-    unload: component && component.unload
+// WeakMap fallback from hyperhtml HT @WebReflection
+var EXPANDO = '__hypercomponent'
+var $WeakMap = typeof WeakMap === 'undefined'
+  ? function () {
+    return {
+      get: function (obj) { return obj[EXPANDO] },
+      set: function (obj, value) {
+        Object.defineProperty(obj, EXPANDO, {
+          configurable: true,
+          value: value
+        })
+      }
+    }
+  } : WeakMap
+
+var Components = new $WeakMap()
+
+function createChild (Component, props, children) {
+  if (Components.get(this) === undefined) Components.set(this, {})
+
+  var components = Components.get(this)
+  var key = props && props.key ? Component.name + ':' + props.key : Component.name
+
+  if (components[key] === undefined) {
+    return (components[key] = new Component(
+      extend(
+        Component.defaultProps || {},
+        props || {},
+        children ? { children: children } : {}
+      )
+    )).render()
   }
-  return function wireComponent () {
-    const instance = new Component()
-    instance._symbol = symbol
-    instance._loaded = !(symbol.load || symbol.unload)
-    instance._defaultArgs = slice.call(arguments)
-    return instance
-  }
+
+  var instance = components[key]
+  instance.props = extend(instance.props, props, { children: children })
+  return instance.render()
 }
 
-function Component () {
-  const self = this
-
-  function wire () {
-    return wire.html.apply(self, arguments)
-  }
-
-  wire.html = html(this)
-  wire.svg = svg(this)
-
-  this._wire = wire
+function HyperComponent (props) {
+  if (this.connectedCallback) this.connect = this.connectedCallback
+  if (this.disconnectedCallback) this.disconnect = this.disconnectedCallback
+  PicoComponent.call(this)
+  this.props = props || this.defaultProps || {}
+  this.state = this.defaultState || {}
 }
 
-Component.prototype.render = function render () {
-  const self = this
-  let args = [this._wire] // first arg is always our wire
+HyperComponent.prototype = Object.create(PicoComponent.prototype)
+HyperComponent.prototype.constructor = HyperComponent
 
-  for (var
-    i = 0,
-    length = arguments.length;
-    i < length; i++
-  ) {
-    args[i + 1] = arguments[i] === undefined
-      ? this._defaultArgs[i] // assign default arg if incomming is undefined
-      : arguments[i]
+HyperComponent.prototype.render = function render () {
+  var self = this
+  if (this._wire === undefined) {
+    this._wire = function wire () {
+      var args = arguments
+      var isStatic = args[0] && args[0].raw
+      if (args.length > 1) {
+        if (isStatic) {
+          return viperHTML.wire(self).apply(viperHTML, args)
+        }
+        return viperHTML.wire.apply(viperHTML, args)
+      }
+      switch (typeof args[0]) {
+        case 'string':
+          return viperHTML.wire(self, args[0])
+        case 'object':
+          if (isStatic) {
+            return viperHTML.wire(self).apply(viperHTML, args)
+          }
+          return viperHTML.wire(args[0])
+        default:
+          return viperHTML.wire(self)
+      }
+    }
   }
-
-  if (this._loaded === false) {
-    return onload(this._symbol.render.apply(this, args), load, unload)
-  }
-
-  return this._symbol.render.apply(this, args)
-
-  function load () {
-    self._loaded = true
-    self._symbol.load.apply(null, arguments)
-  }
-
-  function unload () {
-    self._loaded = false
-    self._symbol.unload.apply(null, arguments)
-  }
+  this.el = this.renderCallback(this._wire, createChild.bind(this))
+  return this.el
 }
+
+HyperComponent.prototype.setState = function setState (state) {
+  this.state = extend(this.state, state)
+  this.render()
+}
+
+module.exports = HyperComponent
+module.exports.default = module.exports
