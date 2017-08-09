@@ -25,7 +25,13 @@ document.body.appendChild(greeting.render())
 
 ## Install
 
+### npm
+
 `npm install hypercomponent --save`
+
+### cdn
+
+`<script src="https://unpkg.com/hypercomponent@latest/dist/hypercomponent.min.js"></scrpt>`
 
 ## API
 
@@ -92,10 +98,10 @@ class Component extends HyperComponent {
     return wire`
       <div>
         <ul>${this.items.map((item) => wire(item, ':unordered')`
-          <div> ${item.text} </div>`
+          <li> ${item.text} </li>`
         )}</ul>
         <ol>${this.items.map((item) => wire(item, ':ordered')`
-          <div> ${item.text} </div>`
+          <li> ${item.text} </li>`
         )}</ol>
       </div>`
   }
