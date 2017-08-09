@@ -1,6 +1,6 @@
 {
   "name": "hypercomponent",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Fast and light component system, backed by hyperHTML",
   "main": "index.js",
   "browser": {
