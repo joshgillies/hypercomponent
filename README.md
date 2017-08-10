@@ -154,6 +154,67 @@ class Child extends HyperComponent {
 
 Renders a component returning it's rendered DOM tree. When the optional argument `node` is provided the contents of the target DOM node will be replaced by your rendered component.
 
+### `HyperComponent.prototype.handleEvent(event)`
+
+By default `handleEvent` is preconfigured to delegate any component method whose name matches a valid DOM event. eg. `onclick`.
+
+The benefit being that instead of binding event handlers individually to your components, you can simply pass your `HyperComponent` instance to your event handler, and delegate all event handling logic through the `handleEvent` API.
+
+As an example:
+
+```js
+// instead of this... 👎
+class BoundButton extends HyperComponent {
+  constructor (props) {
+    super(props)
+    this.onclick = this.onclick.bind(this)
+  }
+  onclick (event) {
+    console.log(event.target, " has been clicked!")
+  }
+  renderCallback (wire) {
+    return wire`
+      <button onclick="${this.onclick}">Click me</button>
+    `
+  }
+}
+
+// you can simply do this! 🎉
+class DelegatedButton extends HyperComponent {
+  onclick (event) {
+    console.log(event.target, " has been clicked!")
+  }
+  renderCallback (wire) {
+    return wire`
+      <button onclick="${this}">Click me</button>
+    `
+  }
+}
+```
+
+Of course the `HyperComponent.prototype.handleEvent` method is simply a helper. You can always override it to create your own event delegation logic.
+
+As an example, if `camelCase` handlers are more your style:
+
+```js
+class Button extends HyperComponent {
+  handleEvent (event) {
+    const type = event.type
+    this[`on${type.substr(0, 1).toUpperCase() + type.substr(1)}`](event)
+  }
+  onClick (event) {
+    console.log(event.target, " has been clicked!")
+  }
+  renderCallback (wire) {
+    return wire`
+      <button onclick="${this}">Click me</button>
+    `
+  }
+}
+```
+
+For more information on the benefits of `handleEvent` checkout this post by [@WebReflection][WebReflection]: [DOM handleEvent: a cross-platform standard since year 2000][handleEvent].
+
 ### `HyperComponent.prototype.connectedCallback()`
 
 When assigned, the `connectedCallback` handler will be called once your component has been inserted into the DOM.
@@ -228,16 +289,14 @@ class TodoApp extends HyperComponent {
   constructor (props) {
     super(props)
     this.state = {items: [], text: ''}
-    this.onchange = this.onchange.bind(this)
-    this.onsubmit = this.onsubmit.bind(this)
   }
   renderCallback (wire, component) {
     return wire`
       <div>
         <h3>TODO</h3>${
         component(TodoList, {items: this.state.items})
-        }<form onsubmit="${this.onsubmit}">
-          <input onchange="${this.onchange}" value="${this.state.text}" />
+        }<form onsubmit="${this}">
+          <input onchange="${this}" value="${this.state.text}" />
           <button>Add #${this.state.items.length + 1}</button>
         </form>
       </div>
@@ -284,6 +343,7 @@ MIT
 [2]: https://img.shields.io/badge/code_style-standard-brightgreen.svg
 [3]: http://standardjs.com/
 [WebReflection]: https://twitter.com/WebReflection
+[handleEvent]: https://medium.com/@WebReflection/dom-handleevent-a-cross-platform-standard-since-year-2000-5bf17287fd38
 [hyper]: https://github.com/WebReflection/hyperHTML
 [types]: https://github.com/WebReflection/hyperHTML/blob/master/DEEPDIVE.md#good
 [wire]: https://github.com/WebReflection/hyperHTML#wait--there-is-a-wire--in-the-code
