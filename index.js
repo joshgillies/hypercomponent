@@ -51,6 +51,10 @@ function HyperComponent (props) {
 HyperComponent.prototype = Object.create(PicoComponent.prototype)
 HyperComponent.prototype.constructor = HyperComponent
 
+HyperComponent.prototype.handleEvent = function handleEvent (event) {
+  this['on' + event.type](event)
+}
+
 HyperComponent.prototype.render = function render (node) {
   var self = this
   if (this._wire === undefined) {
