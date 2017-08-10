@@ -20,7 +20,7 @@ class HelloMessage extends HyperComponent {
 
 const greeting = new HelloMessage({ name: 'Jane'})
 
-document.body.appendChild(greeting.render())
+greeting.render(document.body)
 ```
 
 ## Install
@@ -150,6 +150,10 @@ class Child extends HyperComponent {
 }
 ```
 
+### `HyperComponent.prototype.render(node)`
+
+Renders a component returning it's rendered DOM tree. When the optional argument `node` is provided the contents of the target DOM node will be replaced by your rendered component.
+
 ### `HyperComponent.prototype.connectedCallback()`
 
 When assigned, the `connectedCallback` handler will be called once your component has been inserted into the DOM.
@@ -179,7 +183,7 @@ class HelloMessage extends HyperComponent {
 
 const greeting = new HelloMessage({ name: 'Jane'})
 
-document.body.appendChild(greeting.render())
+greeting.render(document.body)
 ```
 
 ### A Stateful Component
@@ -214,7 +218,7 @@ class Timer extends HyperComponent {
 
 const myTimer = new Timer()
 
-document.body.appendChild(myTimer.render())
+myTimer.render(document.body)
 ```
 
 ### An Application
@@ -268,7 +272,7 @@ class TodoList extends HyperComponent {
 
 const app = new TodoApp()
 
-document.body.appendChild(app.render())
+app.render(document.body)
 ```
 
 ## License

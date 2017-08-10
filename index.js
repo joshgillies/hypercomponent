@@ -51,7 +51,7 @@ function HyperComponent (props) {
 HyperComponent.prototype = Object.create(PicoComponent.prototype)
 HyperComponent.prototype.constructor = HyperComponent
 
-HyperComponent.prototype.render = function render () {
+HyperComponent.prototype.render = function render (node) {
   var self = this
   if (this._wire === undefined) {
     this._wire = function wire () {
@@ -59,7 +59,7 @@ HyperComponent.prototype.render = function render () {
       var isStatic = args[0] && args[0].raw
       if (args.length > 1) {
         if (isStatic) {
-          return viperHTML.wire(self).apply(viperHTML, args)
+          return (node ? viperHTML.bind(node) : viperHTML.wire(self)).apply(viperHTML, args)
         }
         return viperHTML.wire.apply(viperHTML, args)
       }
