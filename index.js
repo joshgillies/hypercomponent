@@ -2,44 +2,6 @@ var PicoComponent = require('picocomponent')
 var viperHTML = require('viperhtml')
 var extend = require('xtend')
 
-// WeakMap fallback from hyperhtml HT @WebReflection
-var EXPANDO = '__hypercomponent'
-var $WeakMap = typeof WeakMap === 'undefined'
-  ? function () {
-    return {
-      get: function (obj) { return obj[EXPANDO] },
-      set: function (obj, value) {
-        Object.defineProperty(obj, EXPANDO, {
-          configurable: true,
-          value: value
-        })
-      }
-    }
-  } : WeakMap
-
-var Components = new $WeakMap()
-
-function createChild (Component, props, children) {
-  if (Components.get(this) === undefined) Components.set(this, {})
-
-  var components = Components.get(this)
-  var key = props && props.key ? Component.name + ':' + props.key : Component.name
-
-  if (components[key] === undefined) {
-    return (components[key] = new Component(
-      extend(
-        Component.defaultProps || {},
-        props || {},
-        children ? { children: children } : {}
-      )
-    )).render()
-  }
-
-  var instance = components[key]
-  instance.props = extend(instance.props, props, { children: children })
-  return instance.render()
-}
-
 function HyperComponent (props) {
   if (this.connectedCallback) this.connect = this.connectedCallback
   if (this.disconnectedCallback) this.disconnect = this.disconnectedCallback
@@ -57,8 +19,8 @@ HyperComponent.prototype.handleEvent = function handleEvent (event) {
 
 HyperComponent.prototype.render = function render (node) {
   var self = this
-  if (this._wire === undefined) {
-    this._wire = function wire () {
+  this.el = this.renderCallback(
+    this._wire || (self._wire = function wire () {
       var args = arguments
       var isStatic = args[0] && args[0].raw
       if (args.length > 1) {
@@ -78,9 +40,28 @@ HyperComponent.prototype.render = function render (node) {
         default:
           return viperHTML.wire(self)
       }
-    }
-  }
-  this.el = this.renderCallback(this._wire, createChild.bind(this))
+    }),
+    this._component || (function (componentCache) {
+      // leverage this closure as an in-memory store for child component instances
+      return (self._component = function component (Component, props, children) {
+        var key = props && props.key ? Component.name + ':' + props.key : Component.name
+        var instance = componentCache[key]
+
+        if (instance === undefined) {
+          instance = componentCache[key] = new Component(
+            extend(
+              Component.defaultProps || {},
+              props || {},
+              children ? { children: children } : {}
+            )
+          )
+        } else {
+          instance.props = extend(instance.props, props, { children: children })
+        }
+        return instance.render()
+      })
+    })({})
+  )
   return this.el
 }
 
